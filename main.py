@@ -1,137 +1,146 @@
 from collections import defaultdict
 from decimal import Decimal, getcontext
 from fractions import Fraction
+from math import floor, log10
 
 
-getcontext().prec = 10000 # Точность для Decimal
+getcontext().prec = 10000  # Точность для Decimal
 
 
-def calculate_probability(num_dice, faces, num_rolls, target_sum):
-    """
-    Рассчитывает вероятность получения target_sum при num_rolls бросках num_dice костей с faces гранями.
-    """
+class Probability():
+    def __init__(self):
+        print("=== Расчёт вероятности выпадения суммы при бросках костей ===\n")
+        try:
+            self.dices_amount = int(input("Введите количество костей: "))
+            self.dice_sides = int(input("Введите количество граней на кости: "))
+            self.rolls_amount = int(input("Введите количество бросков: "))
+            self.target_number = int(input("Введите целевую сумму: "))
 
-    # Общее количество возможных исходов
-    total_outcomes = (faces ** num_dice) ** num_rolls
+            print("\n")
 
-    # DP: dp[бросок][сумма] = количество способов получить эту сумму после этого броска
-    # Начинаем с 0-го броска: сумма 0 -> 1 способ
-    dp = defaultdict(int)
-    dp[0] = 1
+            if self.dices_amount <= 0 or self.dice_sides <= 0 or self.rolls_amount <= 0:
+                print("Все числа должны быть положительными.")
+                return
 
-    # Для каждого броска
-    for roll in range(num_rolls):
-        new_dp = defaultdict(int)
-        # Для каждой суммы, достигнутой на предыдущем шаге
-        for current_sum, count in dp.items():
-            # Генерируем все возможные суммы для одного броска num_dice костей
-            # Используем рекурсию / вложенные циклы для генерации сумм одного броска
-            # Но для эффективности — предварительно посчитаем распределение сумм для одного броска
-            # (можно вынести в отдельную функцию и кэшировать)
+            if self.target_number < self.dices_amount * self.rolls_amount:
+                print(f"Число не может быть меньше {self.dices_amount * self.rolls_amount}.")
+                return
 
-            # Распределение сумм для одного броска num_dice костей с faces гранями
-            single_roll_dist = get_single_roll_distribution(num_dice, faces)
+        except ValueError:
+            print("Введите целое число.")
 
-            # Для каждого возможного результата одного броска
-            for roll_sum, ways in single_roll_dist.items():
-                new_dp[current_sum + roll_sum] += count * ways
+    def _get_single_roll_distribution(self):
+        """
+        Получение словаря: сумма -> количество способов получить её при одном броске `dices_amount` костей.
+        """
+        if self.dices_amount == 0:
+            return {0: 1}
 
-        dp = new_dp
+        dp = defaultdict(int)
+        dp[0] = 1
 
-    # Количество способов получить target_sum
-    favorable_outcomes = dp.get(target_sum, 0)
+        for _ in range(self.dices_amount):
+            new_dp = defaultdict(int)
+            for current_sum, count in dp.items():
+                for face in range(1, self.dice_sides + 1):
+                    new_dp[current_sum + face] += count
+            dp = new_dp
 
-    return favorable_outcomes, total_outcomes
+        return dp
 
+    def _calculate_probability(self):
+        """
+        Рассчитать вероятность получения `target_number` при `rolls_amount` бросках `dices_amount` костей с `dice_sides`
+        гранями.
+        """
+        total_outcomes = (self.dice_sides ** self.dices_amount) ** self.rolls_amount
 
-def get_single_roll_distribution(num_dice, faces):
-    """
-    Возвращает словарь: сумма -> количество способов получить её при одном броске num_dice костей.
-    """
-    from collections import defaultdict
+        dp = defaultdict(int)
+        dp[0] = 1
 
-    if num_dice == 0:
-        return {0: 1}
+        for _ in range(self.rolls_amount):
+            new_dp = defaultdict(int)
 
-    # dp[i] = количество способов получить сумму i
-    dp = defaultdict(int)
-    dp[0] = 1
+            for current_sum, count in dp.items():
+                single_roll_dist = self._get_single_roll_distribution()
 
-    # Добавляем по одной кости
-    for _ in range(num_dice):
-        new_dp = defaultdict(int)
-        for current_sum, count in dp.items():
-            for face in range(1, faces + 1):
-                new_dp[current_sum + face] += count
-        dp = new_dp
+                for roll_sum, ways in single_roll_dist.items():
+                    new_dp[current_sum + roll_sum] += count * ways
 
-    return dp
+            dp = new_dp
 
+        target_outcomes = dp.get(self.target_number, 0)
 
-def main():
-    print("=== Расчёт вероятности выпадения суммы при бросках костей ===")
-    try:
-        num_dice = int(input("Введите количество костей: "))
-        faces = int(input("Введите количество граней на кости: "))
-        num_rolls = int(input("Введите количество бросков: "))
-        target_sum = int(input("Введите целевую сумму: "))
+        return target_outcomes, total_outcomes
 
-        if num_dice <= 0 or faces <= 0 or num_rolls <= 0:
-            print("Все числа должны быть положительными.")
-            return
+    def _small_number_to_decimal_str(self, small_number: int | Decimal, precision: int = 4):
+        """
+        Преобразовать очень маленькое число (например, 8.2e-294) в строку вида "0.000...00082" с указанием количества
+        нулей.
+        """
+        if small_number == 0:
+            return "0.0"
+        if small_number >= 1e-5:
+            return f"{small_number:.{precision+5}f}".rstrip('0').rstrip('.') or "0.0"
 
-        if target_sum < num_dice * num_rolls:
-            print(f"Число не может быть меньше {num_dice * num_rolls}.")
-            return
+        exponent = floor(log10(abs(small_number)))
+        leading_zeros = -exponent - 1
 
-        favorable, total = calculate_probability(num_dice, faces, num_rolls, target_sum)
+        significand = small_number / Decimal(10 ** exponent)
+        rounded_significand = round(significand, precision - 1)
+        
+        if rounded_significand >= 10:
+            rounded_significand /= 10
+            leading_zeros -= 1
 
-        fraction = Fraction(favorable, total)
-        fraction_probability = (f"{fraction.numerator}/{fraction.denominator}")
+        significand_str = f"{rounded_significand:.{precision}f}".rstrip('0').rstrip('.')
+        if '.' in significand_str:
+            significand_str = significand_str.replace('.', '')
 
-        if len(str(favorable)) > 1:
-            chance_numerator = Decimal(favorable) // (10 ** (len(str(favorable))-1)) # Сокращаем до 1 знака вывод текстом, если значения слишком большие
-            chance_denominator = Decimal(total) // (10 ** (len(str(favorable))-1))
-            abt_probability = f"~{1}/{chance_denominator // chance_numerator}"
+        integer_part = "0"
+        decimal_part = "0" * leading_zeros + significand_str
+
+        if len(decimal_part) > 12:
+            shown = decimal_part[:2] + "..." + decimal_part[-(precision + 2):]
+            return f"{integer_part}.{shown}  (всего {leading_zeros} нулей до значащих цифр)"
         else:
-            abt_probability = f"{favorable}/{total}"
+            return f"{integer_part}.{decimal_part}"
 
+    def main(self):
+        try:
+            target_outcomes, total_outcomes = self._calculate_probability()
 
+            fraction = Fraction(target_outcomes, total_outcomes)
+            fraction_probability = (f"{fraction.numerator}/{fraction.denominator}")
 
+            if len(str(target_outcomes)) > 1:
+                chance_numerator = Decimal(target_outcomes) // (10 ** (len(str(target_outcomes))-1))
+                chance_denominator = Decimal(total_outcomes) // (10 ** (len(str(target_outcomes))-1))
+                abt_probability = f"~{1}/{chance_denominator // chance_numerator}"
+            else:
+                abt_probability = f"{target_outcomes}/{total_outcomes}"
 
-        print(f"\nРезультаты:")
-        print(f"Целевая сумма: {target_sum}")
-        print(f"Количество благоприятных исходов: {favorable}")
-        print(f"Общее количество исходов: {total}")
-        print(f"Вероятность: " + (
-                f"{abt_probability}" if
-                fraction_probability != abt_probability else
-                f"{fraction_probability}"
-            ))
+            percent_probability = Decimal(target_outcomes) / Decimal(total_outcomes) * 100
+            percent_probability = self._small_number_to_decimal_str(percent_probability)
 
-        # Опционально: вывод распределения всех сумм
-        show_all = input("\nПоказать полное распределение сумм? (y/n): ").strip().lower()
-        if show_all == 'y':
-            from collections import defaultdict
-            dp = defaultdict(int)
-            dp[0] = 1
-            for _ in range(num_rolls):
-                new_dp = defaultdict(int)
-                single_roll_dist = get_single_roll_distribution(num_dice, faces)
-                for current_sum, count in dp.items():
-                    for roll_sum, ways in single_roll_dist.items():
-                        new_dp[current_sum + roll_sum] += count * ways
-                dp = new_dp
+            print(f"\nРезультаты:")
+            print(f"Целевая сумма: {self.target_number}")
+            print(f"Количество благоприятных исходов: {target_outcomes}")
+            print(f"Общее количество исходов: {total_outcomes}")
+            print(
+                f"Вероятность: " + 
+                (
+                    f"{abt_probability}" if
+                    fraction_probability != abt_probability else
+                    f"{fraction_probability}"
+                ) +
+                f", или ~{percent_probability}%"
+            )
 
-            print("\nРаспределение сумм:")
-            for s in sorted(dp.keys()):
-                print(f"{s}: {dp[s]}")
-
-    except ValueError:
-        print("1 числа.")
-    except Exception as e:
-        print(f"Произошла ошибка: {e}")
+        except Exception as e:
+            print(f"Произошла ошибка: {e}")
 
 
 if __name__ == "__main__":
-    main()
+    probability = Probability()
+    probability.main()
