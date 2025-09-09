@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎲 Калькулятор костей</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #5a5a5a;
+            font-weight: 600;
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+            padding: 0 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #444;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #6e8efb;
+        }
+
+        input[type="submit"] {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        input[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(110, 142, 251, 0.4);
+        }
+
+        .result-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 12px;
+            border-left: 5px solid #6e8efb;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            white-space: pre-line;
+            line-height: 1.6;
+            color: #2c3e50;
+            font-size: 0.95rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result-box h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🎲 Калькулятор вероятности бросков костей</h2>
+
+        <form method="post">
+            <div class="form-group">
+                <label for="dice">Количество костей:</label>
+                <input name="dice" type="number" id="dice" min="1" value="2" required>
+            </div>
+
+            <div class="form-group">
+                <label for="faces">Граней на кости:</label>
+                <input name="faces" type="number" id="faces" min="2" value="6" required>
+            </div>
+
+            <div class="form-group">
+                <label for="rolls">Количество бросков:</label>
+                <input name="rolls" type="number" id="rolls" min="1" value="2" required>
+            </div>
+
+            <div class="form-group">
+                <label for="target">Целевая сумма:</label>
+                <input name="target" type="number" id="target" min="1" value="7" required>
+            </div>
+
+            <input type="submit" value="Рассчитать">
+        </form>
+
+        {% if result %}
+        <div class="result-box">
+            <h3>📊 Результат:</h3>
+            {{ result | replace('\n', '<br>') | safe }}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
